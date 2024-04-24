@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Resources;
 using System.Text;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
+using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
 
 namespace Autodesk.AutoCAD.Runtime.Localization
@@ -72,6 +75,27 @@ namespace Autodesk.AutoCAD.Runtime.Localization
       static Dictionary<Enum, string> enums
          = new Dictionary<Enum, string>();
 
+      static LenientResourceManager manager = 
+         new LenientResourceManager(typeof(Entity));
+
+      /// <summary>
+      /// The only resources currently supported are 
+      /// AcDbMgd.resources.dll in the locale folder 
+      /// ProgramFiles\AutoCAD 20??\<locale>\
+      /// 
+      /// These APIs were designed to fetch resources
+      /// using the naming convention used in the above
+      /// resources assembly (e.g., using the prefixes
+      /// ("Class.", "Property.", and "Enum.").
+      /// 
+      /// On English AutoCAD the path to the file is:
+      /// 
+      ///   ProgramFiles\AutoCAD 20??\en-US\AcDbMgd.resources.dll
+      ///   
+      /// </summary>
+      /// <param name="type"></param>
+      /// <returns></returns>
+
       public static ResourceManager GetManager(Type type)
       {
          if(type == null)
@@ -86,6 +110,14 @@ namespace Autodesk.AutoCAD.Runtime.Localization
          GetManager(typeof(Entity));
       }
 
+      /// <summary>
+      /// Manual fallback to find and load acdbmgd.resources.dll
+      /// </summary>
+      /// <param name="name"></param>
+      /// <param name="type"></param>
+      /// <returns></returns>
+      /// <exception cref="ArgumentNullException"></exception>
+
       public static string GetLocalizedName(string name, Type type)
       {
          if(type == null)
@@ -99,7 +131,7 @@ namespace Autodesk.AutoCAD.Runtime.Localization
             throw new ArgumentException(nameof(key));
          if(type == null)
             throw new ArgumentNullException(nameof(type));
-         return TryGetLocalizedName(key, GetManager(type), out result);
+         return TryGetString(key, GetManager(type), out result);
       }
 
       public static string GetLocalizedName(string key, ResourceManager manager)
@@ -112,7 +144,7 @@ namespace Autodesk.AutoCAD.Runtime.Localization
          return string.IsNullOrWhiteSpace(str) ? key : str;
       }
 
-      public static bool TryGetLocalizedName(string key, ResourceManager manager, out string result)
+      public static bool TryGetString(string key, ResourceManager manager, out string result)
       {
          if(string.IsNullOrWhiteSpace(key))
             throw new ArgumentException(nameof(key));
